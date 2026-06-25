@@ -1,0 +1,20 @@
+@import "tailwindcss";
+
+@theme {
+  --font-serif: 'Georgia', 'Iowan Old Style', 'Palatino Linotype', serif;
+  --font-sans: 'Helvetica Neue', Arial, sans-serif;
+  --font-display: 'Cormorant Garamond', 'Georgia', serif;
+  --font-accent: 'Crimson Pro', 'Georgia', serif;
+  --font-assamese: 'Noto Sans Bengali', 'Georgia', serif;
+}
+
+body {
+  margin: 0;
+  background-color: #e0f2f1;
+  background-image:
+    linear-gradient(rgba(13, 95, 90, 0.55), rgba(13, 95, 90, 0.65)),
+    url('https://images.unsplash.com/photo-1481627834876-b7833e8f5570?auto=format&fit=crop&w=1800&q=70');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+}

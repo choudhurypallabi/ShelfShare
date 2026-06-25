@@ -1,0 +1,20 @@
+-- Example seed data for ShelfShare.
+--
+-- Unlike the old localStorage demo, books here must belong to a real signed-up
+-- user (owner_id references profiles, which references auth.users). So:
+--   1. Sign up at least one real account through the app's Sign Up form first.
+--   2. Find that user's id: select id, name from profiles;
+--   3. Replace YOUR_USER_ID below with that uuid, then run this file in the
+--      Supabase SQL editor.
+
+-- insert into books (title, author, genre, condition, description, owner_id, status)
+-- values
+--   ('The Night Circus', 'Erin Morgenstern', 'Fantasy', 'Good',
+--    'A magical competition between two illusionists set within a mysterious traveling circus.',
+--    'YOUR_USER_ID', 'Available'),
+--   ('Project Hail Mary', 'Andy Weir', 'Sci-Fi', 'Fair',
+--    'A lone astronaut must save humanity from extinction in this gripping science mystery.',
+--    'YOUR_USER_ID', 'Available'),
+--   ('Atomic Habits', 'James Clear', 'Self-Help', 'Good',
+--    'A practical guide to building good habits and breaking bad ones, one tiny change at a time.',
+--    'YOUR_USER_ID', 'Available');

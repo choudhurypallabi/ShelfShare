@@ -1,12 +1,28 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { LibraryProvider } from './context/LibraryContext';
+import { isSupabaseConfigured } from './lib/supabaseClient';
 import Navbar from './components/Navbar';
 import Browse from './pages/Browse';
 import AddBook from './pages/AddBook';
 import BookDetail from './pages/BookDetail';
 import MyShelf from './pages/MyShelf';
 import Login from './pages/Login';
+
+function SetupRequired() {
+  return (
+    <div className="min-h-screen flex items-center justify-center px-4">
+      <div className="max-w-md bg-white rounded-lg border border-amber-100 shadow-sm p-6 text-center">
+        <h1 className="font-display text-2xl text-amber-950 mb-2">Connect Supabase to continue</h1>
+        <p className="text-sm text-amber-700 mb-4">
+          This app needs a Supabase project before it can run. Copy <code>.env.example</code> to{' '}
+          <code>.env.local</code>, fill in your project's URL and anon key, then restart the dev server.
+          Full steps are in <code>README.md</code>.
+        </p>
+      </div>
+    </div>
+  );
+}
 
 function RequireAuth({ children }) {
   const { user, loading } = useAuth();
@@ -46,6 +62,8 @@ function AppRoutes() {
 }
 
 function App() {
+  if (!isSupabaseConfigured) return <SetupRequired />;
+
   return (
     <AuthProvider>
       <AppRoutes />

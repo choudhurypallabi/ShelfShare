@@ -115,3 +115,23 @@ create policy "users can leave waitlist themselves" on waitlist
 alter publication supabase_realtime add table books;
 alter publication supabase_realtime add table borrows;
 alter publication supabase_realtime add table waitlist;
+
+-- Auto-create a profile row whenever someone signs up, using the "name"
+-- passed in via supabase.auth.signUp(..., { data: { name } }). This runs as
+-- the table owner (security definer), so it works even before the new
+-- user's session/RLS context exists (e.g. while email confirmation is pending).
+create function public.handle_new_user()
+returns trigger
+language plpgsql
+security definer set search_path = public
+as $$
+begin
+  insert into public.profiles (id, name)
+  values (new.id, coalesce(new.raw_user_meta_data->>'name', new.email));
+  return new;
+end;
+$$;
+
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute procedure public.handle_new_user();

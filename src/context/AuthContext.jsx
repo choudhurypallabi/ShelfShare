@@ -29,14 +29,15 @@ export function AuthProvider({ children }) {
   }, [session?.user?.id]);
 
   async function signUp(email, password, name) {
-    const { data, error } = await supabase.auth.signUp({ email, password });
+    // The "name" is stashed in auth metadata; a DB trigger (see supabase/schema.sql)
+    // reads it to create the matching profiles row, since RLS would otherwise
+    // block a client-side insert before email confirmation completes.
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { data: { name } },
+    });
     if (error) throw error;
-    if (data.user) {
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert({ id: data.user.id, name });
-      if (profileError) throw profileError;
-    }
   }
 
   async function signIn(email, password) {

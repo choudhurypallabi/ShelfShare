@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useLibrary } from '../context/LibraryContext';
-import { useBookCover } from '../utils/useBookCover';
+import { coverImageUrl } from '../utils/coverImage';
 import { isAssameseScript } from '../utils/scriptDetect';
 
 const statusStyles = {
@@ -16,7 +16,6 @@ export default function BookDetail() {
     useLibrary();
   const navigate = useNavigate();
   const book = books.find((b) => b.id === id);
-  const cover = useBookCover(book ?? { id: 'none', title: '', author: '' });
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
 
@@ -31,6 +30,7 @@ export default function BookDetail() {
     );
   }
 
+  const cover = coverImageUrl(book);
   const isOwner = book.ownerId === currentUser.id;
   const isBorrower = book.borrowerId === currentUser.id;
   const onWaitlist = book.waitlist.includes(currentUser.id);

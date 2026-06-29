@@ -135,3 +135,19 @@ $$;
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute procedure public.handle_new_user();
+
+-- Storage bucket for user-uploaded book cover photos.
+-- Public read (covers need to display for everyone browsing); only
+-- signed-in users can upload, and only into their own user-id folder.
+insert into storage.buckets (id, name, public)
+values ('book-covers', 'book-covers', true)
+on conflict (id) do nothing;
+
+create policy "book covers are publicly readable" on storage.objects
+  for select using (bucket_id = 'book-covers');
+
+create policy "users can upload covers into their own folder" on storage.objects
+  for insert with check (
+    bucket_id = 'book-covers'
+    and (storage.foldername(name))[1] = auth.uid()::text
+  );

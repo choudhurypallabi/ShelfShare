@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { useBookCover } from '../utils/useBookCover';
+import { coverImageUrl } from '../utils/coverImage';
 import { isAssameseScript } from '../utils/scriptDetect';
 
 const statusStyles = {
@@ -9,7 +9,7 @@ const statusStyles = {
 };
 
 export default function BookCard({ book, compact = false }) {
-  const cover = useBookCover(book);
+  const cover = coverImageUrl(book);
 
   return (
     <Link

@@ -23,6 +23,7 @@ function buildBooksView(books, borrows, waitlistRows, profilesById) {
       condition: book.condition,
       description: book.description,
       status: book.status,
+      coverUrl: book.cover_url,
       ownerId: book.owner_id,
       ownerName: owner?.name ?? 'Unknown',
       borrowId: activeBorrow?.id ?? null,
@@ -96,6 +97,7 @@ export function LibraryProvider({ children }) {
       genre: payload.genre,
       condition: payload.condition,
       description: payload.description || null,
+      cover_url: payload.coverUrl || null,
       owner_id: currentUser.id,
       status: 'Available',
     });

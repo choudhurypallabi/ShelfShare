@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLibrary } from '../context/LibraryContext';
+import { uploadBookCover } from '../utils/uploadCover';
 
 const GENRES = ['Fantasy', 'Sci-Fi', 'Memoir', 'Thriller', 'Self-Help', 'History', 'Romance', 'Mystery', 'Biography', 'Other'];
 
 export default function AddBook() {
-  const { addBook } = useLibrary();
+  const { addBook, currentUser } = useLibrary();
   const navigate = useNavigate();
   const [form, setForm] = useState({
     title: '',
@@ -14,11 +15,24 @@ export default function AddBook() {
     condition: 'Good',
     description: '',
   });
+  const [photo, setPhoto] = useState(null);
+  const [photoPreview, setPhotoPreview] = useState(null);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   function handleChange(e) {
     setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
+  }
+
+  function handlePhotoChange(e) {
+    const file = e.target.files?.[0];
+    if (!file) {
+      setPhoto(null);
+      setPhotoPreview(null);
+      return;
+    }
+    setPhoto(file);
+    setPhotoPreview(URL.createObjectURL(file));
   }
 
   async function handleSubmit(e) {
@@ -28,8 +42,13 @@ export default function AddBook() {
       return;
     }
     setSubmitting(true);
+    setError('');
     try {
-      await addBook(form);
+      let coverUrl = null;
+      if (photo) {
+        coverUrl = await uploadBookCover(photo, currentUser.id);
+      }
+      await addBook({ ...form, coverUrl });
       navigate('/shelf');
     } catch (err) {
       setError(err.message);
@@ -45,6 +64,27 @@ export default function AddBook() {
 
       <form onSubmit={handleSubmit} className="bg-white rounded-lg border border-amber-100 shadow-sm p-6 flex flex-col gap-4">
         {error && <p className="text-rose-600 text-sm">{error}</p>}
+
+        <label className="flex flex-col gap-1">
+          <span className="text-sm font-medium text-amber-900">Book Photo (optional)</span>
+          {photoPreview && (
+            <img
+              src={photoPreview}
+              alt="Selected book cover preview"
+              className="w-32 aspect-[3/4] object-cover rounded-md border border-amber-200 mb-1"
+            />
+          )}
+          <input
+            type="file"
+            accept="image/*"
+            capture="environment"
+            onChange={handlePhotoChange}
+            className="text-sm text-amber-900 file:mr-3 file:px-3 file:py-2 file:rounded-md file:border-0 file:bg-amber-100 file:text-amber-900 file:font-medium"
+          />
+          <span className="text-xs text-amber-600">
+            Take a photo or choose one from your library. If skipped, a placeholder image is used.
+          </span>
+        </label>
 
         <label className="flex flex-col gap-1">
           <span className="text-sm font-medium text-amber-900">Title</span>
@@ -117,7 +157,7 @@ export default function AddBook() {
           disabled={submitting}
           className="mt-2 bg-amber-700 hover:bg-amber-800 disabled:opacity-60 text-white font-medium py-2.5 rounded-md transition-colors"
         >
-          {submitting ? 'Listing...' : 'List Book'}
+          {submitting ? (photo ? 'Uploading photo...' : 'Listing...') : 'List Book'}
         </button>
       </form>
     </div>

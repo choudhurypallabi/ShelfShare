@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLibrary } from '../context/LibraryContext';
 import { uploadBookCover } from '../utils/uploadCover';
+import CameraCapture from '../components/CameraCapture';
 
 const GENRES = ['Fantasy', 'Sci-Fi', 'Memoir', 'Thriller', 'Self-Help', 'History', 'Romance', 'Mystery', 'Biography', 'Other'];
 
@@ -17,6 +18,7 @@ export default function AddBook() {
   });
   const [photo, setPhoto] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(null);
+  const [showCamera, setShowCamera] = useState(false);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
@@ -33,6 +35,12 @@ export default function AddBook() {
     }
     setPhoto(file);
     setPhotoPreview(URL.createObjectURL(file));
+  }
+
+  function handleCameraCapture(file) {
+    setPhoto(file);
+    setPhotoPreview(URL.createObjectURL(file));
+    setShowCamera(false);
   }
 
   async function handleSubmit(e) {
@@ -74,14 +82,27 @@ export default function AddBook() {
               className="w-32 aspect-[3/4] object-cover rounded-md border border-amber-200 mb-1"
             />
           )}
-          <input
-            type="file"
-            accept="image/*"
-            onChange={handlePhotoChange}
-            className="text-sm text-amber-900 file:mr-3 file:px-3 file:py-2 file:rounded-md file:border-0 file:bg-amber-100 file:text-amber-900 file:font-medium"
-          />
+          {showCamera ? (
+            <CameraCapture onCapture={handleCameraCapture} onClose={() => setShowCamera(false)} />
+          ) : (
+            <div className="flex flex-wrap items-center gap-2">
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handlePhotoChange}
+                className="text-sm text-amber-900 file:mr-3 file:px-3 file:py-2 file:rounded-md file:border-0 file:bg-amber-100 file:text-amber-900 file:font-medium"
+              />
+              <button
+                type="button"
+                onClick={() => setShowCamera(true)}
+                className="text-sm font-medium px-3 py-2 rounded-md bg-amber-100 hover:bg-amber-200 text-amber-900 transition-colors"
+              >
+                📷 Take Photo
+              </button>
+            </div>
+          )}
           <span className="text-xs text-amber-600">
-            Browse to a photo, or use your device's camera option if offered. If skipped, a placeholder image is used.
+            Browse to a photo, or take one with your camera. If skipped, a placeholder image is used.
           </span>
         </label>
 

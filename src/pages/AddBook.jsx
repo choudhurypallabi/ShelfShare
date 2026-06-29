@@ -77,12 +77,11 @@ export default function AddBook() {
           <input
             type="file"
             accept="image/*"
-            capture="environment"
             onChange={handlePhotoChange}
             className="text-sm text-amber-900 file:mr-3 file:px-3 file:py-2 file:rounded-md file:border-0 file:bg-amber-100 file:text-amber-900 file:font-medium"
           />
           <span className="text-xs text-amber-600">
-            Take a photo or choose one from your library. If skipped, a placeholder image is used.
+            Browse to a photo, or use your device's camera option if offered. If skipped, a placeholder image is used.
           </span>
         </label>
 

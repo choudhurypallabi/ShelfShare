@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLibrary } from '../context/LibraryContext';
 import { uploadBookCover } from '../utils/uploadCover';
+import { extractBookDetails } from '../utils/bookLookup';
 import CameraCapture from '../components/CameraCapture';
 
 const GENRES = ['Fantasy', 'Sci-Fi', 'Memoir', 'Thriller', 'Self-Help', 'History', 'Romance', 'Mystery', 'Biography', 'Other'];
@@ -21,9 +22,58 @@ export default function AddBook() {
   const [showCamera, setShowCamera] = useState(false);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [detecting, setDetecting] = useState(false);
 
   function handleChange(e) {
     setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
+  }
+
+  async function listBook(values, photoFile) {
+    setSubmitting(true);
+    setError('');
+    try {
+      let coverUrl = null;
+      if (photoFile) {
+        coverUrl = await uploadBookCover(photoFile, currentUser.id);
+      }
+      await addBook({ ...values, coverUrl });
+      navigate('/shelf');
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  // OCR the photo and look the text up on Google Books. If we get a
+  // confident title + author, list the book immediately; otherwise
+  // pre-fill whatever was found and let the user finish the form.
+  async function detectAndAdd(file) {
+    setDetecting(true);
+    setError('');
+    try {
+      const details = await extractBookDetails(file);
+      if (details?.title && details?.author) {
+        const values = {
+          ...form,
+          title: details.title,
+          author: details.author,
+          genre: details.genre,
+          condition: 'Good',
+        };
+        setForm(values);
+        await listBook(values, file);
+        return;
+      }
+      if (details?.title) {
+        setForm((f) => ({ ...f, title: details.title, genre: details.genre, condition: 'Good' }));
+      }
+      setError('Could not read all details from the photo — please fill in the rest and click List Book.');
+    } catch {
+      setError('Could not detect book details from the photo — please fill the form manually.');
+    } finally {
+      setDetecting(false);
+    }
   }
 
   function handlePhotoChange(e) {
@@ -35,12 +85,14 @@ export default function AddBook() {
     }
     setPhoto(file);
     setPhotoPreview(URL.createObjectURL(file));
+    detectAndAdd(file);
   }
 
   function handleCameraCapture(file) {
     setPhoto(file);
     setPhotoPreview(URL.createObjectURL(file));
     setShowCamera(false);
+    detectAndAdd(file);
   }
 
   async function handleSubmit(e) {
@@ -49,20 +101,7 @@ export default function AddBook() {
       setError('Title and author are required.');
       return;
     }
-    setSubmitting(true);
-    setError('');
-    try {
-      let coverUrl = null;
-      if (photo) {
-        coverUrl = await uploadBookCover(photo, currentUser.id);
-      }
-      await addBook({ ...form, coverUrl });
-      navigate('/shelf');
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setSubmitting(false);
-    }
+    await listBook(form, photo);
   }
 
   return (
@@ -102,8 +141,14 @@ export default function AddBook() {
             </div>
           )}
           <span className="text-xs text-amber-600">
-            Browse to a photo, or take one with your camera. If skipped, a placeholder image is used.
+            Snap or choose a cover photo and we'll read the title, author, and genre from it and
+            list the book automatically. You can also fill the form manually.
           </span>
+          {detecting && (
+            <span className="text-sm text-amber-700 font-medium animate-pulse">
+              Reading book details from photo...
+            </span>
+          )}
         </label>
 
         <label className="flex flex-col gap-1">
@@ -174,7 +219,7 @@ export default function AddBook() {
 
         <button
           type="submit"
-          disabled={submitting}
+          disabled={submitting || detecting}
           className="mt-2 bg-amber-700 hover:bg-amber-800 disabled:opacity-60 text-white font-medium py-2.5 rounded-md transition-colors"
         >
           {submitting ? (photo ? 'Uploading photo...' : 'Listing...') : 'List Book'}

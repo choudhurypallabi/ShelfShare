@@ -76,6 +76,8 @@ create policy "owners can insert their own books" on books
   for insert with check (auth.uid() = owner_id);
 create policy "owners can update their own books" on books
   for update using (auth.uid() = owner_id);
+create policy "owners can delete their own books" on books
+  for delete using (auth.uid() = owner_id);
 
 -- borrows: readable by the borrower or the book's owner; insertable by the borrower;
 -- updatable by the borrower (extend/return) or the owner (confirm/return)

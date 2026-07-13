@@ -7,6 +7,7 @@ create extension if not exists "uuid-ossp";
 create table profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   name text not null,
+  email text,
   created_at timestamptz not null default now()
 );
 
@@ -128,8 +129,8 @@ language plpgsql
 security definer set search_path = public
 as $$
 begin
-  insert into public.profiles (id, name)
-  values (new.id, coalesce(new.raw_user_meta_data->>'name', new.email));
+  insert into public.profiles (id, name, email)
+  values (new.id, coalesce(new.raw_user_meta_data->>'name', new.email), new.email);
   return new;
 end;
 $$;
@@ -137,6 +138,35 @@ $$;
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute procedure public.handle_new_user();
+
+-- One-click borrow. Runs as definer because RLS (correctly) stops a
+-- borrower from updating the book row's status themselves; this keeps
+-- the availability check + borrow insert + status flip atomic instead.
+create or replace function public.borrow_book(p_book_id uuid)
+returns void
+language plpgsql
+security definer set search_path = public
+as $$
+declare
+  v_book books%rowtype;
+begin
+  select * into v_book from books where id = p_book_id for update;
+  if v_book.id is null then
+    raise exception 'Book not found.';
+  end if;
+  if v_book.status <> 'Available' then
+    raise exception 'This book is not available to borrow.';
+  end if;
+  if v_book.owner_id = auth.uid() then
+    raise exception 'You cannot borrow your own book.';
+  end if;
+
+  insert into borrows (book_id, borrower_id, status, borrowed_at, due_at)
+  values (p_book_id, auth.uid(), 'active', now(), now() + interval '15 days');
+
+  update books set status = 'Borrowed' where id = p_book_id;
+end;
+$$;
 
 -- Storage bucket for user-uploaded book cover photos.
 -- Public read (covers need to display for everyone browsing); only

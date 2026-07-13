@@ -12,8 +12,7 @@ const statusStyles = {
 
 export default function BookDetail() {
   const { id } = useParams();
-  const { books, currentUser, requestBorrow, confirmBorrow, returnBook, joinWaitlist, extendBorrow } =
-    useLibrary();
+  const { books, currentUser, borrowBook, returnBook, joinWaitlist, extendBorrow } = useLibrary();
   const navigate = useNavigate();
   const book = books.find((b) => b.id === id);
   const [error, setError] = useState('');
@@ -34,7 +33,6 @@ export default function BookDetail() {
   const isOwner = book.ownerId === currentUser.id;
   const isBorrower = book.borrowerId === currentUser.id;
   const onWaitlist = book.waitlist.includes(currentUser.id);
-  const isPendingByMe = book.status === 'Pending' && book.pendingUserId === currentUser.id;
   const extensionsLeft = book.maxExtensions - book.extensionCount;
 
   async function runAction(action) {
@@ -49,9 +47,8 @@ export default function BookDetail() {
     }
   }
 
-  const handleRequest = () => runAction(() => requestBorrow(book.id));
+  const handleBorrow = () => runAction(() => borrowBook(book.id));
   const handleJoinWaitlist = () => runAction(() => joinWaitlist(book.id));
-  const handleConfirm = () => runAction(() => confirmBorrow(book.id));
   const handleReturn = () => runAction(() => returnBook(book.id));
   const handleExtend = () => runAction(() => extendBorrow(book.id));
 
@@ -100,16 +97,6 @@ export default function BookDetail() {
           {error && <p className="text-sm text-rose-600">{error}</p>}
 
           <div className="mt-4 flex flex-wrap items-center gap-3">
-            {isOwner && book.status === 'Pending' && (
-              <button
-                onClick={handleConfirm}
-                disabled={busy}
-                className="bg-amber-700 hover:bg-amber-800 disabled:opacity-60 text-white font-medium px-5 py-2.5 rounded-md transition-colors"
-              >
-                Confirm Borrow Request
-              </button>
-            )}
-
             {isOwner && book.status === 'Borrowed' && (
               <button
                 onClick={handleReturn}
@@ -126,20 +113,12 @@ export default function BookDetail() {
 
             {!isOwner && book.status === 'Available' && (
               <button
-                onClick={handleRequest}
+                onClick={handleBorrow}
                 disabled={busy}
                 className="bg-amber-700 hover:bg-amber-800 disabled:opacity-60 text-white font-medium px-5 py-2.5 rounded-md transition-colors"
               >
-                Request to Borrow
+                Borrow (15 days)
               </button>
-            )}
-
-            {!isOwner && isPendingByMe && (
-              <p className="text-sm text-amber-700 font-medium">Request pending owner confirmation...</p>
-            )}
-
-            {!isOwner && book.status === 'Pending' && !isPendingByMe && (
-              <p className="text-sm text-amber-600 italic">Someone else has requested this book.</p>
             )}
 
             {!isOwner && book.status === 'Borrowed' && isBorrower && (
@@ -169,7 +148,7 @@ export default function BookDetail() {
                 disabled={onWaitlist || busy}
                 className="bg-amber-200 hover:bg-amber-300 disabled:opacity-60 text-amber-900 font-medium px-5 py-2.5 rounded-md transition-colors"
               >
-                {onWaitlist ? 'On Waitlist' : 'Join Waitlist'}
+                {onWaitlist ? '🔔 We\'ll email you when it\'s available' : '🔔 Notify me when available'}
               </button>
             )}
           </div>

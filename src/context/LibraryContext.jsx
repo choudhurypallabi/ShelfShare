@@ -105,37 +105,11 @@ export function LibraryProvider({ children }) {
     await refetch();
   }
 
-  async function requestBorrow(bookId) {
-    const { error: borrowError } = await supabase
-      .from('borrows')
-      .insert({ book_id: bookId, borrower_id: currentUser.id, status: 'pending' });
-    if (borrowError) throw borrowError;
-
-    const { error: bookError } = await supabase
-      .from('books')
-      .update({ status: 'Pending' })
-      .eq('id', bookId);
-    if (bookError) throw bookError;
-    await refetch();
-  }
-
-  async function confirmBorrow(bookId) {
-    const book = books.find((b) => b.id === bookId);
-    if (!book?.borrowId) return;
-
-    const dueAt = new Date(Date.now() + LOAN_DAYS * DAY_MS).toISOString();
-
-    const { error: borrowError } = await supabase
-      .from('borrows')
-      .update({ status: 'active', borrowed_at: new Date().toISOString(), due_at: dueAt })
-      .eq('id', book.borrowId);
-    if (borrowError) throw borrowError;
-
-    const { error: bookError } = await supabase
-      .from('books')
-      .update({ status: 'Borrowed' })
-      .eq('id', bookId);
-    if (bookError) throw bookError;
+  async function borrowBook(bookId) {
+    // Atomic RPC: checks availability, creates the borrow, flips the
+    // book to Borrowed. RLS stops a borrower doing the flip client-side.
+    const { error } = await supabase.rpc('borrow_book', { p_book_id: bookId });
+    if (error) throw error;
     await refetch();
   }
 
@@ -184,6 +158,15 @@ export function LibraryProvider({ children }) {
       .update({ status: 'Available' })
       .eq('id', bookId);
     if (bookError) throw bookError;
+
+    // Email everyone on the waitlist that the book is available again.
+    // Fire-and-forget: a notification failure shouldn't block the return.
+    fetch('/api/notify-available', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ bookId }),
+    }).catch(() => {});
+
     await refetch();
   }
 
@@ -203,8 +186,7 @@ export function LibraryProvider({ children }) {
         currentUser,
         pendingCount,
         addBook,
-        requestBorrow,
-        confirmBorrow,
+        borrowBook,
         extendBorrow,
         returnBook,
         joinWaitlist,
